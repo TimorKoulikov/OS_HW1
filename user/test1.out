@@ -1,0 +1,2 @@
+test1.exe: test1.cxx:14: int main(): Assertion `set_is_paid(1) == 0' failed.
+Aborted (core dumped)
