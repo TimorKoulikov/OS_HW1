@@ -41,14 +41,14 @@ int main()
         const int N = 4; 
         std::vector<Request> reports; 
         
-        // Pipe for children to send their Request structs to the parent
+        // pipe for children to send their Request structs to the parent
         int report_pipe[2];
         if (pipe(report_pipe) == -1) {
             perror("pipe failed");
             return 1;
         }
 
-        std::cout << "[Parent] Forking " << N << " request children...\n";
+        std::cout << "[parent] Forking " << N << " request children...\n";
 
         for (int i = 0; i < N; ++i) {
             pid_t pid = fork();
@@ -59,38 +59,38 @@ int main()
             }
 
             if (pid == 0) { 
-                // --- CHILD PROCESS ---
+                // child
                 close(report_pipe[0]); // Close read end of the pipe
 
-                // 1. Setup phase: simulate different combinations for testing
+                // 1) simulate different combinations for testing
                 int simulated_paid = (i % 2 == 0) ? 1 : 0; 
 
                 set_is_paid(simulated_paid);
 
-                // 2. Gather data using the system calls you implemented
+                // 2) gather data using the system calls you implemented
                 Request req;
                 req.pid = getpid();
                 req.paid = get_is_paid();
                 req.priority = get_ai_token_priority();
 
-                // 3. Report back to parent (atomic write since sizeof(Request) < PIPE_BUF)
+                // 3) report back to parent (atomic write since sizeof(Request) < PIPE_BUF)
                 write(report_pipe[1], &req, sizeof(req));
                 close(report_pipe[1]);
 
-                // 4. Gate mechanism: Block until the parent releases us
-                std::cout << "[Child " << getpid() << "] Stopping and waiting for release...\n";
+                // 4) block until the parent releases us
+                std::cout << "[child " << getpid() << "] Stopping and waiting for release...\n";
                 raise(SIGSTOP);
 
-                // 5. Execution phase: This runs ONLY after receiving SIGCONT
-                std::cout << "[Child " << getpid() << "] Executing job and exiting!\n";
+                // 5) next section runs ONLY after receiving SIGCONT
+                std::cout << "[child " << getpid() << "] Executing job and exiting!\n";
                 exit(0); 
             }
         }
 
-        // --- PARENT PROCESS ---
+        // parent
         close(report_pipe[1]); // Close write end of the pipe
 
-        // 1. Drain the pipe to collect all reports (Avoids deadlocks)
+        // collect all reports (Avoids deadlocks)
         for (int i = 0; i < N; ++i) {
             Request req;
             if (read(report_pipe[0], &req, sizeof(req)) == sizeof(req)) {
@@ -99,15 +99,15 @@ int main()
         }
         close(report_pipe[0]);
 
-        // 2. Ensure all children have actually reached the STOPPED state.
-        // If we send SIGCONT before they execute raise(SIGSTOP), it will be ignored,
+        // Important pphase: ensure all children have actually reached the STOPPED state.
+        // if we send SIGCONT before they execute raise(SIGSTOP), it will be ignored,
         // and they will hang forever. WUNTRACED catches them entering the stopped state.
         for (const Request& r : reports) {
             int status;
             waitpid(r.pid, &status, WUNTRACED);
         }
 
-        // 3. Sort the reports based on the scheduling rules
+        // sort the reports based on the scheduling rules
         std::sort(reports.begin(), reports.end(), runs_before); 
 
         std::cout << "\n--- Planned Run Order ---\n"; 
@@ -118,16 +118,14 @@ int main()
         }
         std::cout << "-------------------------\n\n";
 
-        // 4. Release children strictly in the sorted order
+        // releasae children strictly in the sorted order
         for (const Request &r : reports) {
-            // Send continue signal
             kill(r.pid, SIGCONT);
             
-            // Wait for this specific child to finish executing before releasing the next one
-            // This strictly enforces the ordered execution requirement.
+            // wait for this specific child to finish execution before releasing the next one
             waitpid(r.pid, NULL, 0); 
         }
 
-        std::cout << "[Parent] All requests completed. Exiting.\n";
+        std::cout << "[parent] All requests completed. Exiting.\n";
         return 0; 
 }
