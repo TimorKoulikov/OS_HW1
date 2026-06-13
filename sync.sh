@@ -30,6 +30,6 @@ echo "Applying custom kernel files..."
 # 3. Use rsync to overlay the files
 # The trailing slash on $SRC_DIR/ is critical! It means "copy the contents of this folder" 
 # rather than "copy the folder itself".
-rsync -av --update --exclude="sync.sh" --exclude="user/" --exclude=".git/" "$SRC_DIR/" "$DEST_DIR/"
+rsync -av --update --exclude="sync.sh" --exclude="submitters.txt" --exclude="user/" --exclude=".git/" "$SRC_DIR/" "$DEST_DIR/"
 
 echo "Overlay complete!"
