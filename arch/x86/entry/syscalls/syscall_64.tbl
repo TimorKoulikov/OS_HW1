@@ -332,10 +332,10 @@
 323	common	userfaultfd		sys_userfaultfd
 324	common	membarrier		sys_membarrier
 325	common	mlock2			sys_mlock2
-333 common  hello           sys_hello
-334 common  set_is_paid     sys_set_is_paid
-335 common  get_is_paid     sys_get_is_paid
-336 common  get_ai_token_priority sys_get_ai_token_priority
+333	common	hello			sys_hello
+334	common	set_is_paid		sys_set_is_paid
+335	common	get_is_paid		sys_get_is_paid
+336	common	get_ai_token_priority	sys_get_ai_token_priority
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact
